@@ -1,5 +1,6 @@
 from transformers import CLIPTextModel, CLIPTokenizer, logging
-from diffusers import AutoencoderKL, UNet2DConditionModel, PNDMScheduler, DDIMScheduler, StableDiffusionPipeline
+from diffusers import AutoencoderKL, UNet2DConditionModel, PNDMScheduler, DDIMScheduler, StableDiffusionPipeline, \
+    DDPMParallelScheduler, StableDiffusionParadigmsPipeline
 from diffusers.utils.import_utils import is_xformers_available
 from os.path import isfile
 from pathlib import Path
@@ -46,7 +47,7 @@ class StableDiffusion(nn.Module):
         self.precision_t = torch.float16 if fp16 else torch.float32
 
         # Create model
-        pipe = StableDiffusionPipeline.from_pretrained(model_key, torch_dtype=self.precision_t)
+        pipe = StableDiffusionParadigmsPipeline.from_pretrained(model_key, torch_dtype=self.precision_t)
 
         if vram_O:
             pipe.enable_sequential_cpu_offload()
@@ -71,7 +72,7 @@ class StableDiffusion(nn.Module):
         self.max_step = int(self.num_train_timesteps * t_range[1])
         self.alphas = self.scheduler.alphas_cumprod.to(self.device) # for convenience
 
-        print(f'[INFO] loaded stable diffusion!')
+        print(f'[INFO] loaded stable diffusion with PARADIGMS!')
 
     @torch.no_grad()
     def get_text_embeds(self, prompt):
