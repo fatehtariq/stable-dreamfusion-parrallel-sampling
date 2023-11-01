@@ -63,7 +63,7 @@ class StableDiffusion(nn.Module):
         self.text_encoder = pipe.text_encoder
         self.unet = pipe.unet
 
-        self.scheduler = DDIMScheduler.from_pretrained(model_key, subfolder="scheduler", torch_dtype=self.precision_t)
+        self.scheduler = DDPMParallelScheduler.from_pretrained(model_key, subfolder="scheduler", torch_dtype=self.precision_t, timestep_spacing="trailing")
 
         del pipe
 
