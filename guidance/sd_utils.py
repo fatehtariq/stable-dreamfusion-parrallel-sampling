@@ -156,11 +156,12 @@ class StableDiffusion(nn.Module):
 
                 # all 3 input images are [1, 3, H, W], e.g. [1, 3, 512, 512]
                 viz_images = torch.cat([pred_rgb_512, result_noisier_image, result_hopefully_less_noisy_image],dim=0)
+                print('[Saving an image]>>>>>>>>>>>>>>>>>>>>>>>>')
                 save_image(viz_images, save_guidance_path)
 
         targets = (latents - grad).detach()
         loss = 0.5 * F.mse_loss(latents.float(), targets, reduction='sum') / latents.shape[0]
-
+        print('[Returning Loss for Diffusion Step]>>>>>>>>>>>>>>>>>>>>>>>>')
         return loss
     
 
