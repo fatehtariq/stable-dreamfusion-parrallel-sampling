@@ -208,11 +208,15 @@ class StableDiffusion(nn.Module):
 
         start.record()
 
+        print("[INFO] Starting Parallel Denoising.", flush=True)
+
         while begin_idx < len(scheduler.timesteps):
             # these have shape (parallel_dim, 2*batch_size, ...)
             # parallel_len is at most parallel, but could be less if we are at the end of the timesteps
             # we are processing batch window of timesteps spanning [begin_idx, end_idx)
             parallel_len = end_idx - begin_idx
+
+            print("[INFO] Parallel Length created.", flush=True)
 
             block_prompt_embeds = torch.stack([prompt_embeds] * parallel_len)
             block_latents = latents_time_evolution_buffer[begin_idx:end_idx]
@@ -225,6 +229,8 @@ class StableDiffusion(nn.Module):
             latent_model_input = torch.cat([block_latents] * 2, dim=1) if do_classifier_free_guidance else block_latents
             latent_model_input = self.scheduler.scale_model_input(latent_model_input, t_vec)
 
+            print("[INFO] Latents Expanded For Classifier Free Guidance.", flush=True)
+
             # if parallel_len is small, no need to use multiple GPUs
             net = self.wrapped_unet if parallel_len > 3 else self.unet
             # predict the noise residual
@@ -235,6 +241,8 @@ class StableDiffusion(nn.Module):
                 cross_attention_kwargs=cross_attention_kwargs,
                 return_dict=False,
             )[0]
+
+            print("[INFO] Noise Output Predicted.", flush=True)
 
             per_latent_shape = model_output.shape[1:]
             if do_classifier_free_guidance:
@@ -253,6 +261,8 @@ class StableDiffusion(nn.Module):
                 sample=block_latents.flatten(0, 1),
             ).reshape(block_latents.shape)
 
+            print("[INFO] Block Latents Denoise Generated.", flush=True)
+
             # back to shape (parallel_dim, batch_size, ...)
             # now we want to add the pre-sampled noise
             # parallel sampling algorithm requires computing the cumulative drift from the beginning
@@ -260,6 +270,8 @@ class StableDiffusion(nn.Module):
             delta = block_latents_denoise - block_latents
             cumulative_delta = torch.cumsum(delta, dim=0)
             cumulative_noise = torch.cumsum(noise_array[begin_idx:end_idx], dim=0)
+
+            print("[INFO] Cumulative Noise Generated.", flush=True)
 
             # if we are using an ODE-like scheduler (like DDIM), we don't want to add noise
             if scheduler._is_ode_scheduler:
@@ -270,6 +282,8 @@ class StableDiffusion(nn.Module):
                 parallel_len, batch_size * num_images_per_prompt, -1)
             cur_error = torch.linalg.norm(cur_error_vec, dim=-1).pow(2)
             error_ratio = cur_error * inverse_variance_norm[begin_idx + 1:end_idx + 1]
+
+            print("[INFO] Error Ratio Calculated.", flush=True)
 
             # find the first index of the vector error_ratio that is greater than error tolerance
             # we can shift the window for the next iteration up to this index
