@@ -378,7 +378,8 @@ if __name__ == '__main__':
         guidance = nn.ModuleDict()
 
         if 'SD' in opt.guidance:
-            from guidance.sd_utils import StableDiffusion
+            #from guidance.sd_utils import StableDiffusion
+            from guidance.parallel_sd_utils import StableDiffusion
             guidance['SD'] = StableDiffusion(device, opt.fp16, opt.vram_O, opt.sd_version, opt.hf_key, opt.t_range)
 
         if 'IF' in opt.guidance:

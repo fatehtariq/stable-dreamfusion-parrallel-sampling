@@ -48,6 +48,11 @@ class StableDiffusion(nn.Module):
 
         # Create model
         pipe = StableDiffusionParadigmsPipeline.from_pretrained(model_key, torch_dtype=self.precision_t)
+        pipe.enable_xformers_memory_efficient_attention()
+
+        # Create wrapped unet pipeline for parallel sampling with multiple GPUs
+        ngpu, batch_per_device = torch.cuda.device_count(), 5
+        pipe.wrapped_unet = torch.nn.DataParallel(pipe.unet, device_ids=[d for d in range(ngpu)])
 
         if vram_O:
             pipe.enable_sequential_cpu_offload()
@@ -64,6 +69,8 @@ class StableDiffusion(nn.Module):
         self.unet = pipe.unet
 
         self.scheduler = DDPMParallelScheduler.from_pretrained(model_key, subfolder="scheduler", torch_dtype=self.precision_t, timestep_spacing="trailing")
+
+        self.parallel = ngpu * batch_per_device
 
         del pipe
 
