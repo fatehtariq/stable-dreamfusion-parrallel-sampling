@@ -137,22 +137,14 @@ class StableDiffusion(nn.Module):
 
         print("[INFO] Setting up Call Parameters.", flush=True)
 
-        device = self._execution_device
+        device = self.device
         # here `guidance_scale` is defined analog to the guidance weight `w` of equation (2)
         # of the Imagen paper: https://arxiv.org/pdf/2205.11487.pdf . `guidance_scale = 1`
         # corresponds to doing no classifier free guidance.
         do_classifier_free_guidance = guidance_scale > 1.0
 
         # 3. Encode input prompt
-        prompt_embeds = self._encode_prompt(
-            prompt,
-            device,
-            num_images_per_prompt,
-            do_classifier_free_guidance,
-            negative_prompt,
-            prompt_embeds=prompt_embeds,
-            negative_prompt_embeds=negative_prompt_embeds,
-        )
+        prompt_embeds = self.get_text_embeds(prompt)
 
         print("[INFO] Extracted Text Embeddings successfully.", flush=True)
 
