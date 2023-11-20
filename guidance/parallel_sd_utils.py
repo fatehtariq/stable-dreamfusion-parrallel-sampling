@@ -50,7 +50,7 @@ class StableDiffusion(nn.Module):
 
         # Create model
         pipe = StableDiffusionParadigmsPipeline.from_pretrained(model_key, torch_dtype=self.precision_t)
-        pipe.enable_xformers_memory_efficient_attention()
+        #pipe.enable_xformers_memory_efficient_attention()
 
         # Create wrapped unet pipeline for parallel sampling with multiple GPUs
         ngpu, batch_per_device = torch.cuda.device_count(), 5
