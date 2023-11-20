@@ -163,7 +163,6 @@ class StableDiffusion(nn.Module):
             pred_rgb_512 = F.interpolate(pred_rgb, (512, 512), mode='bilinear', align_corners=False)
             # encode image into latents with vae, requires grad!
             latents = self.encode_imgs(pred_rgb_512)
-        latents = self.encode_imgs(pred_rgb_512)
 
         print("[INFO] Producing Latent Variables.", flush=True)
 
