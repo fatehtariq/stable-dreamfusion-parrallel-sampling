@@ -98,6 +98,7 @@ class StableDiffusion(nn.Module):
 
     def train_step(
             self,
+            as_latent,
             pred_rgb,
             prompt: Union[str, List[str]] = None,
             height: Optional[int] = None,
@@ -155,10 +156,13 @@ class StableDiffusion(nn.Module):
         print("[INFO] Preparing Time steps for Scheduler.", flush=True)
 
         # 5. Prepare latent variables
-        num_channels_latents = self.unet.in_channels
-        # interp to 512x512 to be fed into vae.
-        pred_rgb_512 = F.interpolate(pred_rgb, (512, 512), mode='bilinear', align_corners=False)
-        # encode image into latents with vae, requires grad!
+        if as_latent:
+            latents = F.interpolate(pred_rgb, (64, 64), mode='bilinear', align_corners=False) * 2 - 1
+        else:
+            # interp to 512x512 to be fed into vae.
+            pred_rgb_512 = F.interpolate(pred_rgb, (512, 512), mode='bilinear', align_corners=False)
+            # encode image into latents with vae, requires grad!
+            latents = self.encode_imgs(pred_rgb_512)
         latents = self.encode_imgs(pred_rgb_512)
 
         print("[INFO] Producing Latent Variables.", flush=True)
