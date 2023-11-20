@@ -98,6 +98,7 @@ class StableDiffusion(nn.Module):
 
     def train_step(
             self,
+            pred_rgb,
             prompt: Union[str, List[str]] = None,
             height: Optional[int] = None,
             width: Optional[int] = None,
@@ -121,8 +122,8 @@ class StableDiffusion(nn.Module):
         print("[INFO] Setting up parallel pipeline.", flush=True)
 
         # 0. Default height and width to unet
-        height = height or self.unet.config.sample_size * self.vae_scale_factor
-        width = width or self.unet.config.sample_size * self.vae_scale_factor
+        height = height or 512
+        width = width or 512
 
         print("[INFO] Setting up Height and Width of Image Data.", flush=True)
 
@@ -163,21 +164,15 @@ class StableDiffusion(nn.Module):
 
         # 5. Prepare latent variables
         num_channels_latents = self.unet.in_channels
-        latents = self.prepare_latents(
-            batch_size * num_images_per_prompt,
-            num_channels_latents,
-            height,
-            width,
-            prompt_embeds.dtype,
-            device,
-            generator,
-            latents,
-        )
+        # interp to 512x512 to be fed into vae.
+        pred_rgb_512 = F.interpolate(pred_rgb, (512, 512), mode='bilinear', align_corners=False)
+        # encode image into latents with vae, requires grad!
+        latents = self.encode_imgs(pred_rgb_512)
 
         print("[INFO] Producing Latent Variables.", flush=True)
 
-        # 6. Prepare extra step kwargs. TODO: Logic should ideally just be moved out of the pipeline
-        extra_step_kwargs = self.prepare_extra_step_kwargs(generator, eta)
+        # 6. Prepare extra step kwargs.
+        #extra_step_kwargs = self.prepare_extra_step_kwargs(generator, eta)
 
         # 7. Denoising loop
         # print(scheduler.timesteps)
@@ -261,7 +256,6 @@ class StableDiffusion(nn.Module):
                 model_output=model_output,
                 timesteps=block_t.flatten(0, 1),
                 sample=block_latents.flatten(0, 1),
-                **extra_step_kwargs,
             ).reshape(block_latents.shape)
 
             # back to shape (parallel_dim, batch_size, ...)

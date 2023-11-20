@@ -628,7 +628,7 @@ class Trainer(object):
                     loss = loss + self.guidance['SD'].train_step_perpneg(text_z, weights, pred_rgb, as_latent=as_latent, guidance_scale=self.opt.guidance_scale, grad_scale=self.opt.lambda_guidance,
                                                     save_guidance_path=save_guidance_path)
                 else:
-                    loss = loss + self.guidance['SD'].train_step(prompt=self.opt.text)
+                    loss = loss + self.guidance['SD'].train_step(prompt=self.opt.text, pred_rgb=pred_rgb)
 
             if 'IF' in self.guidance:
                 # interpolate text_z
